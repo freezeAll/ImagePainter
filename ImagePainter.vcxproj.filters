@@ -75,5 +75,8 @@
     <ClInclude Include="GeneratedFiles\ui_imgpaintersetting.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
+    <ClInclude Include="config_json_template.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

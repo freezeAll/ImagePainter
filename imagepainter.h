@@ -23,10 +23,10 @@
 #include <QtWidgets/QRadioButton>
 #include <QMimeData>
 #include <QLinkedList>
-#include "../wintool/config_json_template.h"
+#include "config_json_template.h"
 
 #include "imgpaintersetting.h"
-#include <QException> 
+#include <QException>
 #include "matrixinfo.hpp"
 enum WherePos
 {
@@ -45,7 +45,7 @@ class SettingBox
 public:
 	SettingBox(const std::string& = "");
 	//SettingBox(QRectF);
-	SettingBox(QColor, QRectF, std::string);
+	SettingBox(QColor, QRect, std::string);
 	~SettingBox();
 	void switch_painting_mode();
 	void switch_seleted_mode();
@@ -55,7 +55,7 @@ public:
 
 	bool selected;
 	bool painting;
-	QRectF data;
+	QRect data;
 	QPen pen;
 	QColor box_color;
 	QBrush box_brush;
@@ -69,7 +69,7 @@ public:
 	explicit ImagePainter(QWidget *parent = 0);
 	~ImagePainter();
 	void debug();
-	void display_mat(const cv::Mat&);
+	
 	void display_qimage(const QImage&);
 	void set_is_connected_camera(const bool&);
 	enum Statu
@@ -94,12 +94,15 @@ public slots:
 	void stop_painting();
 	void delete_selected_box();
 	bool get_box_from_name(const std::string&, QRectF&);
+	void display_mat(const cv::Mat&);
+	void clear_all_boxs();
 
-	
 
+	void display_done_img(const cv::Mat&);
 
 	void save_2_json();
 	void init_json();
+	void set_done_time(const int&);
 protected:
 	void mousePressEvent(QMouseEvent*);
 	void mouseMoveEvent(QMouseEvent*);
@@ -117,7 +120,7 @@ private:
 	QPointF box_end_point;
 
 
-	QPainter* painter;
+	//QPainter* painter;
 	void resizeEvent(QResizeEvent*);
 	void contextMenuEvent(QContextMenuEvent*);
 
@@ -138,13 +141,15 @@ private:
 	void zoomin(QWheelEvent *);
 	void zoomout(QWheelEvent *);
 
-	QImage  mat2qimage(const cv::Mat&);
+	QImage  mat2qimage(const cv::Mat&,bool flag = false);
 
 	//QPixmap mat2qpixmap(const cv::Mat&);
 	//QPainter* painter;
 	//cv::Mat dismat;
 	cv::Mat rgb;
+	cv::Mat rgb_done;
 	QImage disimg;
+	QImage disimg_done;
 	QPixmap dispm;
 	QRectF target;
 	QRectF source;
@@ -179,6 +184,10 @@ private:
 	bool is_tab;
 
 	bool is_connected_camera;
+
+	QTimer done_timer;
+	int done_time;
+	bool dis_done;
 public:
 	Statu get_statu();
 };

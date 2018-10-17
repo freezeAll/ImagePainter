@@ -17,54 +17,52 @@ ImagePainter::ImagePainter(QWidget *parent) :
 	is_tab(true),
 	statu(NORMAL),
 	box_start_point(),
-	is_connected_camera(false)
+	is_connected_camera(false),
+	done_time(2000),
+	dis_done(false)
 {
 
 	font.setPixelSize(20);
 	font.setFamily("Microsoft YaHei");
 	rectangle.setRect(this->width() / 2.0 - 10.0, this->height() / 2.0 - 10.0, 500, 1000);
 	this->setAcceptDrops(true);
-	painter = new QPainter(this);
 	connect(this, &ImagePainter::timer_run, this, &ImagePainter::on_timer);
 	connect(&number_timer, &QTimer::timeout, this, &ImagePainter::off_timer);
 
 	debug();
 
 	init_json();
+
+	connect(&done_timer, &QTimer::timeout, [this]() {
+		dis_done = false;
+		done_timer.stop();
+	});
 }
 
 ImagePainter::~ImagePainter()
 {
 	save_2_json();
-	delete painter;
 }
 
 void ImagePainter::debug()
 {
-	cv::Mat dismat = cv::imread("./20180714103013172.bmp");
+	cv::Mat dismat = cv::imread("./Image__2018-08-10__11-01-16.bmp");
 	display_mat(dismat);
 }
 
 void ImagePainter::display_mat(const cv::Mat &m)
 {
-
 	disimg = mat2qimage(m);
-
-	//std::ofstream log("out.log", std::ios::app);
-	//for (int i = 0; i < (m.cols * m.rows * 3); i += 3)
-	//{
-	//	
-
-	//	log << int(*(disimg.bits() + i)) << " " << int(*(disimg.bits() + i + 1)) << " " << int(*(disimg.bits() + i + 2)) << std::endl;
-
-
-	//}
 	log_zoom = 1.0;
 	source_p.setX(0.0);
 	source_p.setY(0.0);
 	source_s = disimg.size();
 	this->update();
+}
 
+void ImagePainter::clear_all_boxs()
+{
+	box_list.clear();
 }
 
 void ImagePainter::display_qimage(const QImage &i)
@@ -224,14 +222,27 @@ void ImagePainter::delete_selected_box()
 	{
 		if (n == a.name)
 		{
-			rec = a.data;
+			rec = widget_2_img(a.data);
 			return true;
 		}
 	}
 	return false;
 }
 
-void ImagePainter::save_2_json()
+ void ImagePainter::display_done_img(const cv::Mat& m)
+ {
+	 disimg_done = mat2qimage(m,true);
+	 log_zoom = 1.0;
+	 source_p.setX(0.0);
+	 source_p.setY(0.0);
+	 source_s = disimg.size();
+
+	 dis_done = true;
+	 this->update();
+	 done_timer.start(done_time);
+ }
+
+ void ImagePainter::save_2_json()
 {
 	JsonParam<std::vector<json>> box_info_json("box", "box_info");
 	std::vector<json> js;
@@ -276,6 +287,11 @@ void ImagePainter::init_json()
 	update();
 }
 
+void ImagePainter::set_done_time(const int & t)
+{
+	done_time = t;
+}
+
 void ImagePainter::resizeEvent(QResizeEvent *)
 {
 	target_s.setWidth(this->width());
@@ -296,7 +312,7 @@ void ImagePainter::contextMenuEvent(QContextMenuEvent *e)
 		connect(&stop_paint, &QAction::triggered, this, &ImagePainter::stop_painting);
 		menu.exec(e->globalPos());
 	}
-	else if (statu == SELECT_BOX && box_list.begin()->selected && (box_list.begin()->where_is_pos(widget_2_img(e->pos())) == INSIDE))
+	else if (statu == SELECT_BOX && box_list.begin()->selected && (box_list.begin()->where_is_pos(e->pos()) == INSIDE))
 	{
 		QAction delete_selected_box_menu(QString::fromLocal8Bit("É¾³ýµ±Ç°Ñ¡¿ò"), this);
 		menu.addAction(&delete_selected_box_menu);
@@ -351,22 +367,36 @@ void ImagePainter::paintEvent(QPaintEvent *)
 {
 	resize_rects();
 
-
-	painter->begin(this);
-	painter->drawImage(target, disimg, source);
-	painter->setFont(font);
-	painter->setPen(QColor(255, 255, 255, 198));
+	QPainter painter;
+	painter.begin(this);
+	if (dis_done)
+	{
+		painter.drawPixmap(target, QPixmap::fromImage(disimg_done), source);
+	}
+	else
+	{
+		painter.drawPixmap(target, QPixmap::fromImage(disimg), source);
+	}
+	painter.setFont(font);
+	painter.setPen(QColor(255, 255, 255, 198));
 	if (dis_number)
 	{
-		painter->drawText(rectangle, 0, QString::number((disimg.width() / source_s.width()) * 100.0, '.', 0) + "%");
+		if (dis_done)
+		{
+			painter.drawText(rectangle, 0, QString::number((disimg_done.width() / source_s.width()) * 100.0, '.', 0) + "%");
+		}
+		else 
+		{ 
+			painter.drawText(rectangle, 0, QString::number((disimg.width() / source_s.width()) * 100.0, '.', 0) + "%"); 
+		}
 	}
 	if (axis)
 	{
 		if (axis_temp)
 		{
-			painter->setPen(QColor(255, 0, 0, 125));
-			painter->drawLine(QPointF((target_s.width() / 2.0), 0), QPointF(target_s.width() / 2.0, target_s.height()));
-			painter->drawLine(QPointF(0, target_s.height() / 2.0), QPointF(target_s.width(), target_s.height() / 2.0));
+			painter.setPen(QColor(255, 0, 0, 125));
+			painter.drawLine(QPointF((target_s.width() / 2.0), 0), QPointF(target_s.width() / 2.0, target_s.height()));
+			painter.drawLine(QPointF(0, target_s.height() / 2.0), QPointF(target_s.width(), target_s.height() / 2.0));
 		}
 	}
 
@@ -379,17 +409,17 @@ void ImagePainter::paintEvent(QPaintEvent *)
 
 			if (boxes.selected && statu != NORMAL)
 			{
-				painter->setBrush(boxes.box_brush);
+				painter.setBrush(boxes.box_brush);
 			}
 			else
 			{
-				painter->setBrush(Qt::BrushStyle::NoBrush);
+				painter.setBrush(Qt::BrushStyle::NoBrush);
 			}
-			painter->setPen(boxes.pen);
-			painter->drawRect(img_2_widget(QRect(boxes.data.x(),boxes.data.y(),boxes.data.width(),boxes.data.height())));
+			painter.setPen(boxes.pen);
+			painter.drawRect(QRect(boxes.data.x(),boxes.data.y(),boxes.data.width(),boxes.data.height()));
 		}
 	}
-	painter->end();
+	painter.end();
 }
 
 void ImagePainter::wheelEvent(QWheelEvent *e)
@@ -476,8 +506,8 @@ void ImagePainter::mousePressEvent(QMouseEvent *e)
 		{
 		case ImagePainter::PAINTING_BOX:
 
-			box_start_point = widget_2_img(e->pos());
-			box_end_point = widget_2_img(e->pos());
+			box_start_point = e->pos();
+			box_end_point = e->pos();
 			save_rect = QRect(box_start_point.x(), box_start_point.y(), 0, 0);
 			box_list.begin()->data.setRect(save_rect.x(),save_rect.y(),save_rect.width(),save_rect.height());
 			update();
@@ -486,7 +516,7 @@ void ImagePainter::mousePressEvent(QMouseEvent *e)
 		case ImagePainter::SELECT_BOX:
 			if (!box_list.empty())
 			{
-				switch (box_list.begin()->where_is_pos(widget_2_img(e->pos())))
+				switch (box_list.begin()->where_is_pos(e->pos()))
 				{
 				case ONTOP:
 					box_statu.first = true;
@@ -505,7 +535,7 @@ void ImagePainter::mousePressEvent(QMouseEvent *e)
 					box_statu.second = ONRIGHT;
 					break;
 				case INSIDE:
-					inside_move_start_point = widget_2_img(e->pos());
+					inside_move_start_point = e->pos();
 					box_statu.first = true;
 					box_statu.second = INSIDE;
 					break;
@@ -536,7 +566,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 	switch (statu)
 	{
 	case ImagePainter::PAINTING_BOX:
-		box_end_point = widget_2_img(e->pos());
+		box_end_point = e->pos();
 		save_rect = QRect(box_start_point.x(), box_start_point.y(), box_end_point.x() - box_start_point.x(), box_end_point.y() - box_start_point.y());
 		box_list.begin()->data.setRect(save_rect.x(), save_rect.y(), save_rect.width(), save_rect.height());
 		box_list.begin()->data = box_list.begin()->data.normalized();
@@ -545,7 +575,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 	case ImagePainter::SELECT_BOX:
 		if (!box_list.isEmpty())
 		{
-			switch (box_list.begin()->where_is_pos(widget_2_img(e->pos())))
+			switch (box_list.begin()->where_is_pos(e->pos()))
 			{
 			case ONTOP:
 				this->setCursor(Qt::SizeVerCursor);
@@ -574,9 +604,9 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 			switch (box_statu.second)
 			{
 			case ONTOP:
-				if (box_list.begin()->data.bottom() - (widget_2_img(e->pos()).y()) >= MINTHREDSHOLD)
+				if (box_list.begin()->data.bottom() - (e->pos().y()) >= MINTHREDSHOLD)
 				{
-					box_list.begin()->data.setTop(widget_2_img(e->pos()).y());
+					box_list.begin()->data.setTop(e->pos().y());
 				}
 				else
 				{
@@ -585,9 +615,9 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				update();
 				break;
 			case ONLEFT:
-				if (box_list.begin()->data.right() - (widget_2_img(e->pos()).x()) >= MINTHREDSHOLD)
+				if (box_list.begin()->data.right() - (e->pos().x()) >= MINTHREDSHOLD)
 				{
-					box_list.begin()->data.setLeft(widget_2_img(e->pos()).x());
+					box_list.begin()->data.setLeft(e->pos().x());
 				}
 				else
 				{
@@ -596,9 +626,9 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				update();
 				break;
 			case ONBOTTOM:
-				if ((widget_2_img(e->pos()).y() - box_list.begin()->data.top()) >= MINTHREDSHOLD)
+				if ((e->pos().y() - box_list.begin()->data.top()) >= MINTHREDSHOLD)
 				{
-					box_list.begin()->data.setBottom(widget_2_img(e->pos()).y());
+					box_list.begin()->data.setBottom(e->pos().y());
 				}
 				else
 				{
@@ -607,9 +637,9 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				update();
 				break;
 			case ONRIGHT:
-				if ((widget_2_img(e->pos()).x() - box_list.begin()->data.left()) >= MINTHREDSHOLD)
+				if ((e->pos().x() - box_list.begin()->data.left()) >= MINTHREDSHOLD)
 				{
-					box_list.begin()->data.setRight(widget_2_img(e->pos()).x());
+					box_list.begin()->data.setRight(e->pos().x());
 				}
 				else
 				{
@@ -618,14 +648,14 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				update();
 				break;
 			case INSIDE:
-				box_move_vector = (widget_2_img(e->pos()) - inside_move_start_point);
-				inside_move_start_point = widget_2_img(e->pos());
-				if ((box_list.begin()->data.x() + box_move_vector.x()) >= 0 && ((box_list.begin()->data.right() + box_move_vector.x()) <= disimg.width()))
+				box_move_vector = (e->pos() - inside_move_start_point);
+				inside_move_start_point = e->pos();
+				if ((box_list.begin()->data.x() + box_move_vector.x()) >= 0 && ((box_list.begin()->data.right() + box_move_vector.x()) <= width()))
 				{
 					box_list.begin()->data.setLeft(box_list.begin()->data.left() + box_move_vector.x());
 					box_list.begin()->data.setRight(box_list.begin()->data.right() + box_move_vector.x());
 				}
-				if ((box_list.begin()->data.y() + box_move_vector.y()) >= 0 && ((box_list.begin()->data.bottom() + box_move_vector.y()) <= disimg.height()))
+				if ((box_list.begin()->data.y() + box_move_vector.y()) >= 0 && ((box_list.begin()->data.bottom() + box_move_vector.y()) <= height()))
 				{
 					box_list.begin()->data.setTop(box_list.begin()->data.top() + box_move_vector.y());
 					box_list.begin()->data.setBottom(box_list.begin()->data.bottom() + box_move_vector.y());
@@ -637,8 +667,6 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 			default:
 				break;
 			}
-
-
 		}
 		break;
 	case ImagePainter::UNDIS_BOX:
@@ -658,10 +686,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 			{
 				source_p.setY(source_p.y() - vec.y());
 			}
-
-
 			start_point = m;
-			//QMessageBox::information(0, " ", QString::number(e->buttons(),10), 1024);
 			update();
 		}
 		break;
@@ -695,7 +720,7 @@ void ImagePainter::mouseReleaseEvent(QMouseEvent *e)
 				{
 					for (auto iter = box_list.begin(); iter != box_list.end(); iter++)
 					{
-						if (iter->where_is_pos(widget_2_img(e->pos())) == INSIDE)
+						if (iter->where_is_pos(e->pos()) == INSIDE)
 						{
 							auto tmp = *iter;
 							box_list.begin()->selected = false;
@@ -745,8 +770,6 @@ void ImagePainter::keyReleaseEvent(QKeyEvent *e)
 	}
 }
 
-
-
 void ImagePainter::resize_rects()
 {
 	target.setRect(target_p.x(), target_p.y(), target_s.width(), target_s.height());
@@ -764,19 +787,9 @@ void ImagePainter::zoomin(QWheelEvent *e)
 
 	m.setX(m.x() * vx); m.setY(m.y() * vy);
 	m *= 0.05;
-
-
 	source_p += m;
-	//log_vec.push_back(m);
-
-
 	source_s *= 0.95;
 	log_zoom *= 0.95;
-	//std::ofstream log("out.log", std::ios::app);
-	//log << source_s.width() << "\t" << source_s.height() << std::endl;
-	//log << "++++++++++++++++++++++++++++++++" << std::endl;
-	//log << source_p.x() << "\t" << source_p.y() << std::endl;
-	//log << "--------------------------------" << std::endl;
 	emit timer_run();
 	update();
 }
@@ -809,37 +822,45 @@ void ImagePainter::zoomout(QWheelEvent *e)
 	}
 	emit timer_run();
 	update();
-	//std::ofstream log("out.log", std::ios::app);
-	//log << source_s.width() << "\t" << source_s.height() << std::endl;
-	//log << "++++++++++++++++++++++++++++++++" << std::endl;
-	//log << source_p.x() << "\t" << source_p.y() << std::endl;
-	//log << "--------------------------------" << std::endl;
-
-
 }
 
-QImage ImagePainter::mat2qimage(const cv::Mat &m)
+QImage ImagePainter::mat2qimage(const cv::Mat &m,bool flag)
 {
-
-	switch (m.channels())
+	if (flag)
 	{
-	case 1:
-		cv::cvtColor(m, rgb, CV_GRAY2RGB);
-		break;
-	case 3:
-		cv::cvtColor(m, rgb, CV_BGR2RGB);
-		break;
-	case 4:
-		cv::cvtColor(m, rgb, CV_BGRA2RGB);
-		break;
-	default:
-		return QImage();
-
+		switch (m.channels())
+		{
+		case 1:
+			cv::cvtColor(m, rgb_done, CV_GRAY2RGB);
+			break;
+		case 3:
+			cv::cvtColor(m, rgb_done, CV_BGR2RGB);
+			break;
+		case 4:
+			cv::cvtColor(m, rgb_done, CV_BGRA2RGB);
+			break;
+		default:
+			return QImage();
+		}
+		return QImage(rgb_done.data, rgb_done.cols, rgb_done.rows, rgb_done.step, QImage::Format::Format_RGB888);
 	}
-
-
-	return QImage(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format::Format_RGB888);
-
+	else{
+		switch (m.channels())
+		{
+		case 1:
+			cv::cvtColor(m, rgb, CV_GRAY2RGB);
+			break;
+		case 3:
+			cv::cvtColor(m, rgb, CV_BGR2RGB);
+			break;
+		case 4:
+			cv::cvtColor(m, rgb, CV_BGRA2RGB);
+			break;
+		default:
+			return QImage();
+		}
+		return QImage(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format::Format_RGB888);
+	}
 
 }
 

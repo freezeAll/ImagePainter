@@ -51,7 +51,7 @@ SettingBox::SettingBox(const std::string& n) :
 //	pen.setBrush(box_color);
 //}
 
-SettingBox::SettingBox(QColor color,QRectF rect,std::string n) :
+SettingBox::SettingBox(QColor color,QRect rect,std::string n) :
 	selected(false),
 	data(rect),
 	box_color(color),
