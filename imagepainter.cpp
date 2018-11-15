@@ -1,5 +1,6 @@
 #include "imagepainter.h"
 #include <fstream>
+#include <random>
 #define MINTHREDSHOLD 3.0
 ImagePainter::ImagePainter(QWidget *parent) :
 	QWidget(parent),
@@ -52,32 +53,26 @@ void ImagePainter::debug()
 
 void ImagePainter::display_mat(const cv::Mat &m)
 {
-	disimg = mat2qimage(m);
-	log_zoom = 1.0;
-	source_p.setX(0.0);
-	source_p.setY(0.0);
-	source_s = disimg.size();
+	auto tmp_img = mat2qimage(m);
+	if (tmp_img != disimg)
+	{
+		log_zoom = 1.0;
+		source_p.setX(0.0);
+		source_p.setY(0.0);
+		source_s = tmp_img.size();
+	}
+	disimg = tmp_img;
+	resize_rects();
 	this->update();
 }
 
 void ImagePainter::clear_all_boxs()
 {
+	statu = UNDIS_BOX;
 	box_list.clear();
+	update();
 }
 
-void ImagePainter::display_qimage(const QImage &i)
-{
-	disimg = i;
-	if (disimg.format() != QImage::Format_RGB888)
-	{
-		disimg = disimg.convertToFormat(QImage::Format_RGB888);
-	}
-	log_zoom = 1.0;
-	source_p.setX(0.0);
-	source_p.setY(0.0);
-	source_s = disimg.size();
-	this->update();
-}
 
 void ImagePainter::set_is_connected_camera(const bool & b)
 {
@@ -235,8 +230,9 @@ void ImagePainter::delete_selected_box()
 	 log_zoom = 1.0;
 	 source_p.setX(0.0);
 	 source_p.setY(0.0);
-	 source_s = disimg.size();
+	 source_s = disimg_done.size();
 
+	 resize_rects();
 	 dis_done = true;
 	 this->update();
 	 done_timer.start(done_time);
@@ -290,6 +286,19 @@ void ImagePainter::init_json()
 void ImagePainter::set_done_time(const int & t)
 {
 	done_time = t;
+}
+
+void ImagePainter::add_new_box(const QRect & rct, const std::string & n,const QColor& c)
+{
+	statu = SELECT_BOX;
+	std::random_device r;
+	std::default_random_engine e1(r());
+	std::uniform_int_distribution<int> uniform_dist(0, 255);
+	box_list.push_front(SettingBox(QColor(uniform_dist(e1), uniform_dist(e1), uniform_dist(e1),120), img_2_widget(rct),n));
+	box_list.begin()->selected = true;
+	box_list.begin()->pen.setStyle(Qt::PenStyle::SolidLine);
+	box_list.begin()->box_brush = QBrush(box_list.begin()->box_color);
+	update();
 }
 
 void ImagePainter::resizeEvent(QResizeEvent *)
@@ -371,10 +380,16 @@ void ImagePainter::paintEvent(QPaintEvent *)
 	painter.begin(this);
 	if (dis_done)
 	{
+		if (source == QRectF(0, 0, disimg_done.width(), disimg_done.height()))
+			painter.drawPixmap(target, QPixmap::fromImage(disimg_done.scaled(QSize(this->size()))), target);
+		else
 		painter.drawPixmap(target, QPixmap::fromImage(disimg_done), source);
 	}
 	else
 	{
+		if (source == QRectF(0, 0, disimg.width(), disimg.height()))
+			painter.drawPixmap(target, QPixmap::fromImage(disimg.scaled(QSize(this->size()))), target);
+		else
 		painter.drawPixmap(target, QPixmap::fromImage(disimg), source);
 	}
 	painter.setFont(font);
@@ -429,8 +444,6 @@ void ImagePainter::wheelEvent(QWheelEvent *e)
 	switch (statu)
 	{
 	case ImagePainter::PAINTING_BOX:
-
-
 		break;
 	case ImagePainter::SELECT_BOX:
 		break;
@@ -570,6 +583,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 		save_rect = QRect(box_start_point.x(), box_start_point.y(), box_end_point.x() - box_start_point.x(), box_end_point.y() - box_start_point.y());
 		box_list.begin()->data.setRect(save_rect.x(), save_rect.y(), save_rect.width(), save_rect.height());
 		box_list.begin()->data = box_list.begin()->data.normalized();
+		emit box_changed();
 		update();
 		break;
 	case ImagePainter::SELECT_BOX:
@@ -607,6 +621,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				if (box_list.begin()->data.bottom() - (e->pos().y()) >= MINTHREDSHOLD)
 				{
 					box_list.begin()->data.setTop(e->pos().y());
+					emit box_changed();
 				}
 				else
 				{
@@ -618,6 +633,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				if (box_list.begin()->data.right() - (e->pos().x()) >= MINTHREDSHOLD)
 				{
 					box_list.begin()->data.setLeft(e->pos().x());
+					emit box_changed();
 				}
 				else
 				{
@@ -629,6 +645,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				if ((e->pos().y() - box_list.begin()->data.top()) >= MINTHREDSHOLD)
 				{
 					box_list.begin()->data.setBottom(e->pos().y());
+					emit box_changed();
 				}
 				else
 				{
@@ -640,6 +657,7 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				if ((e->pos().x() - box_list.begin()->data.left()) >= MINTHREDSHOLD)
 				{
 					box_list.begin()->data.setRight(e->pos().x());
+					emit box_changed();
 				}
 				else
 				{
@@ -654,11 +672,13 @@ void ImagePainter::mouseMoveEvent(QMouseEvent *e)
 				{
 					box_list.begin()->data.setLeft(box_list.begin()->data.left() + box_move_vector.x());
 					box_list.begin()->data.setRight(box_list.begin()->data.right() + box_move_vector.x());
+					emit box_changed();
 				}
 				if ((box_list.begin()->data.y() + box_move_vector.y()) >= 0 && ((box_list.begin()->data.bottom() + box_move_vector.y()) <= height()))
 				{
 					box_list.begin()->data.setTop(box_list.begin()->data.top() + box_move_vector.y());
 					box_list.begin()->data.setBottom(box_list.begin()->data.bottom() + box_move_vector.y());
+					emit box_changed();
 				}
 				update();
 				break;
@@ -791,6 +811,7 @@ void ImagePainter::zoomin(QWheelEvent *e)
 	source_s *= 0.95;
 	log_zoom *= 0.95;
 	emit timer_run();
+	resize_rects();
 	update();
 }
 
@@ -821,6 +842,7 @@ void ImagePainter::zoomout(QWheelEvent *e)
 		source_p.setY(0);
 	}
 	emit timer_run();
+	resize_rects();
 	update();
 }
 

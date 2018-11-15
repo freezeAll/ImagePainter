@@ -2,6 +2,7 @@
 #include "json.hpp"
 #include <fstream>
 #include <mutex>
+#include <filesystem>
 using json = nlohmann::json;
 using json_error = nlohmann::json::parse_error;
 using type_error = nlohmann::json::type_error;
@@ -16,7 +17,11 @@ public:
 		cname(cn),
 		data(T())
 	{
-		
+		std::experimental::filesystem::path path("./config");
+		if (!path.has_extension())
+		{
+			std::experimental::filesystem::create_directory(path);
+		}
 		std::ifstream is("./config/" + file_name + ".json");
 		if (!is.is_open())
 		{

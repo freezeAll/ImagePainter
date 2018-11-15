@@ -44,7 +44,6 @@ class SettingBox
 {
 public:
 	SettingBox(const std::string& = "");
-	//SettingBox(QRectF);
 	SettingBox(QColor, QRect, std::string);
 	~SettingBox();
 	void switch_painting_mode();
@@ -70,7 +69,6 @@ public:
 	~ImagePainter();
 	void debug();
 	
-	void display_qimage(const QImage&);
 	void set_is_connected_camera(const bool&);
 	enum Statu
 	{
@@ -81,6 +79,7 @@ public:
 	};
 signals:
 	void timer_run();
+	void box_changed();
 public slots:
 	void show_matrix();
 	void on_timer();
@@ -96,56 +95,34 @@ public slots:
 	bool get_box_from_name(const std::string&, QRectF&);
 	void display_mat(const cv::Mat&);
 	void clear_all_boxs();
-
-
 	void display_done_img(const cv::Mat&);
-
 	void save_2_json();
 	void init_json();
 	void set_done_time(const int&);
+	void add_new_box(const QRect&,const std::string& = "",const QColor& = QColor());
 protected:
 	void mousePressEvent(QMouseEvent*);
 	void mouseMoveEvent(QMouseEvent*);
 	void mouseReleaseEvent(QMouseEvent*);
 	void keyPressEvent(QKeyEvent*);
 	void keyReleaseEvent(QKeyEvent*);
-
 private:
-
 	Statu statu;
-
-
 	QLinkedList<SettingBox> box_list;
 	QPointF box_start_point;
 	QPointF box_end_point;
-
-
-	//QPainter* painter;
 	void resizeEvent(QResizeEvent*);
 	void contextMenuEvent(QContextMenuEvent*);
-
-
-
 	void paintEvent(QPaintEvent*);
 	void wheelEvent(QWheelEvent*);
-
-
 	QRect img_2_widget(const QRect&);
 	QRect widget_2_img(const QRect&);
-
 	QPoint img_2_widget(const QPoint&);
 	QPoint widget_2_img(const QPoint&);
-
 	void resize_rects();
-
 	void zoomin(QWheelEvent *);
 	void zoomout(QWheelEvent *);
-
 	QImage  mat2qimage(const cv::Mat&,bool flag = false);
-
-	//QPixmap mat2qpixmap(const cv::Mat&);
-	//QPainter* painter;
-	//cv::Mat dismat;
 	cv::Mat rgb;
 	cv::Mat rgb_done;
 	QImage disimg;
@@ -157,34 +134,22 @@ private:
 	QPointF source_p;
 	QSizeF target_s;
 	QSizeF source_s;
-
 	QVector<QPointF> log_vec;
-
 	SelectBoxStatu box_statu;
-
 	QPointF inside_move_start_point;
 	QPointF start_point;
 	QPointF box_move_vector;
-
 	float log_zoom;
-
 	bool dis_number;
 	QTimer number_timer;
-
 	QFont font;
-
 	QRect rectangle;
-
 	bool axis;
 	bool axis_temp;
-
 	QString out_path;
 	QString out_name;
-
 	bool is_tab;
-
 	bool is_connected_camera;
-
 	QTimer done_timer;
 	int done_time;
 	bool dis_done;
