@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'imgpaintersetting.ui'
 **
-** Created by: Qt User Interface Compiler version 5.11.1
+** Created by: Qt User Interface Compiler version 5.12.0
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -33,31 +33,31 @@ public:
     void setupUi(QDialog *ImgPainterSetting)
     {
         if (ImgPainterSetting->objectName().isEmpty())
-            ImgPainterSetting->setObjectName(QStringLiteral("ImgPainterSetting"));
+            ImgPainterSetting->setObjectName(QString::fromUtf8("ImgPainterSetting"));
         ImgPainterSetting->resize(353, 140);
         buttonBox = new QDialogButtonBox(ImgPainterSetting);
-        buttonBox->setObjectName(QStringLiteral("buttonBox"));
+        buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
         buttonBox->setGeometry(QRect(0, 100, 341, 32));
         buttonBox->setOrientation(Qt::Horizontal);
         buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Ok);
         label = new QLabel(ImgPainterSetting);
-        label->setObjectName(QStringLiteral("label"));
+        label->setObjectName(QString::fromUtf8("label"));
         label->setGeometry(QRect(20, 10, 72, 15));
         label_2 = new QLabel(ImgPainterSetting);
-        label_2->setObjectName(QStringLiteral("label_2"));
+        label_2->setObjectName(QString::fromUtf8("label_2"));
         label_2->setGeometry(QRect(10, 40, 81, 20));
         lineEdit = new QLineEdit(ImgPainterSetting);
-        lineEdit->setObjectName(QStringLiteral("lineEdit"));
+        lineEdit->setObjectName(QString::fromUtf8("lineEdit"));
         lineEdit->setGeometry(QRect(100, 10, 241, 21));
         lineEdit_2 = new QLineEdit(ImgPainterSetting);
-        lineEdit_2->setObjectName(QStringLiteral("lineEdit_2"));
+        lineEdit_2->setObjectName(QString::fromUtf8("lineEdit_2"));
         lineEdit_2->setGeometry(QRect(100, 40, 241, 21));
         radioButton = new QRadioButton(ImgPainterSetting);
-        radioButton->setObjectName(QStringLiteral("radioButton"));
+        radioButton->setObjectName(QString::fromUtf8("radioButton"));
         radioButton->setGeometry(QRect(20, 80, 115, 19));
         radioButton->setChecked(true);
         radioButton_2 = new QRadioButton(ImgPainterSetting);
-        radioButton_2->setObjectName(QStringLiteral("radioButton_2"));
+        radioButton_2->setObjectName(QString::fromUtf8("radioButton_2"));
         radioButton_2->setGeometry(QRect(150, 80, 115, 19));
 
         retranslateUi(ImgPainterSetting);

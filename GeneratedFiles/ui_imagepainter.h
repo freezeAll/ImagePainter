@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'imagepainter.ui'
 **
-** Created by: Qt User Interface Compiler version 5.11.1
+** Created by: Qt User Interface Compiler version 5.12.0
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -22,7 +22,7 @@ public:
     void setupUi(QWidget *ImagePainterClass)
     {
         if (ImagePainterClass->objectName().isEmpty())
-            ImagePainterClass->setObjectName(QStringLiteral("ImagePainterClass"));
+            ImagePainterClass->setObjectName(QString::fromUtf8("ImagePainterClass"));
         ImagePainterClass->resize(600, 400);
 
         retranslateUi(ImagePainterClass);

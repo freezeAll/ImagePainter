@@ -30,7 +30,7 @@ ImagePainter::ImagePainter(QWidget *parent) :
 	connect(this, &ImagePainter::timer_run, this, &ImagePainter::on_timer);
 	connect(&number_timer, &QTimer::timeout, this, &ImagePainter::off_timer);
 
-	debug();
+	//debug();
 
 	init_json();
 
